@@ -81,17 +81,21 @@ const getGigBids = async (req, res) => {
       return res.status(404).json({ message: "Gig not found" });
     }
 
-    if (gig.ownerId.toString() !== req.user._id.toString()) {
-      return res
-        .status(403)
-        .json({ message: "Not authorized to view bids for this gig" });
+    // If user is owner, return all bids
+    if (gig.ownerId.toString() === req.user._id.toString()) {
+      const bids = await Bid.find({ gigId: req.params.gigId })
+        .populate("freelancerId", "name email")
+        .sort({ createdAt: -1 });
+      return res.status(200).json(bids);
     }
 
-    const bids = await Bid.find({ gigId: req.params.gigId })
-      .populate("freelancerId", "name email")
-      .sort({ createdAt: -1 });
+    // If user is NOT owner, return only their bids (if any)
+    const myBids = await Bid.find({
+      gigId: req.params.gigId,
+      freelancerId: req.user._id,
+    }).populate("freelancerId", "name email");
 
-    res.status(200).json(bids);
+    res.status(200).json(myBids);
   } catch (error) {
     console.error(error);
     res.status(500).json({ message: "Server error" });
