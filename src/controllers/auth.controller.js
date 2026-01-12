@@ -26,13 +26,14 @@ const registerUser = async (req, res) => {
       email,
       password: hashedPassword,
     });
-
+    
     if (user) {
       // Send welcome email asynchronously
       sendWelcomeEmail(user.email, user.name).catch((err) =>
         console.error("Failed to send welcome email", err)
       );
 
+      generateToken(res, user._id);
       res.status(201).json({
         _id: user._id,
         name: user.name,
